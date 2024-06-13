@@ -1,0 +1,83 @@
+<!-- profile.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - Anime Blog</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<div class="navbar">
+    <div class="navbar-logo">
+        <a href="/"><img src="/logo.png" alt="Logo"></a>
+        <span class="navbar-title">Anime Blog</span>
+    </div>
+    <div class="navbar-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/add" class="nav-link">Add Entry</a>
+        <% if (userId) { %>
+            <a href="/logout" class="nav-link">Logout</a>
+        <% } else { %>
+            <a href="/login" class="nav-link">Login</a>
+        <% } %>
+    </div>
+</div>
+
+<!-- User Information -->
+<div class="container">
+    <h1>Welcome to Your Profile</h1>
+    <div class="profile-info">
+        <h2>User Information</h2>
+        <p>Username: <%= user.username %></p>
+        <form action="/profile" method="POST">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" value="<%= user.email %>" required>
+            <label for="fullname">Full Name:</label>
+            <input type="text" id="fullname" name="fullname" value="<%= user.fullname %>" required>
+            <label for="favorite_anime">Favorite Anime:</label>
+            <input type="text" id="favorite_anime" name="favorite_anime" value="<%= user.favorite_anime %>">
+            <button type="submit">Update</button>
+        </form>
+    </div>
+    <!-- Displaying User Entries -->
+    <div class="list-container">
+        <h2>Your Entries</h2>
+        <% if (userEntries.length > 0) { %>
+            <% userEntries.forEach(entry => { %>
+                <div class="entry">
+                    <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="showDetails('<%= entry.id %>')">
+                    <div id="details-<%= entry.id %>" style="display: none;">
+                        <h2><%= entry.name %></h2>
+                        <p>Progress: <%= entry.progress %></p>
+                        <p>Rating: <%= entry.rating %></p>
+                        <p>Summary: <%= entry.summary %></p>
+                        <% if (entry.user_id === userId) { %>
+                            <a href="/edit/<%= entry.id %>">Edit</a>
+                            <form action="/delete/<%= entry.id %>" method="POST" style="display: inline;">
+                                <button type="submit">Delete</button>
+                            </form>
+                        <% } %>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p>No entries found.</p>
+        <% } %>
+    </div>
+    <script>
+        function showDetails(entryId) {
+            var detailsDiv = document.getElementById('details-' + entryId);
+            if (detailsDiv.style.display === 'none') {
+                detailsDiv.style.display = 'block';
+            } else {
+                detailsDiv.style.display = 'none';
+            }
+        }
+    </script>
+</div>
+
+</body>
+</html>

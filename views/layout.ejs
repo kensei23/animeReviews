@@ -1,0 +1,32 @@
+<!-- layout.ejs -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Blog</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<div class="navbar">
+    <div class="navbar-logo">
+        <a href="/profile">
+            <button class="profile-button">Profile</button>
+        </a>
+        <span class="navbar-title">Anime Blog</span>
+    </div>
+    <div class="navbar-links">
+        <a href="/">Home</a>
+        <a href="/add">Add Entry</a>
+        <a href="/register">Register</a>
+        <a href="/login">Login</a>
+    </div>
+</div>
+
+<%- body %>
+
+</body>
+</html>

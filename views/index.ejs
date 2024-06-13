@@ -1,0 +1,74 @@
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anime Blog</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<div class="navbar">
+    <div class="navbar-logo">
+        <a href="/profile"><img src="/logo.png" alt="Logo"></a>
+        <span class="navbar-title">Anime Blog</span>
+    </div>
+    <div class="navbar-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/add" class="nav-link">Add Entry</a>
+        <% if (userId) { %>
+            <a href="/logout" class="nav-link">Logout</a>
+        <% } else { %>
+            <a href="/login" class="nav-link">Login</a>
+        <% } %>
+    </div>
+</div>
+
+<div class="container">
+    <h1 class="header">Anime Thoughts</h1>
+    <form class="form-container" action="/search" method="GET">
+        <input type="text" name="term" placeholder="Search...">
+        <button type="submit">Search</button>
+    </form>
+    <div class="list-container">
+        <% entries.forEach(entry => { %>
+            <div class="entry">
+                <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="showDetails('<%= entry.id %>')">
+                <div id="details-<%= entry.id %>" style="display: none;">
+                    <h2><%= entry.name %></h2>
+                    <p>Progress: <%= entry.progress %></p>
+                    <p>Rating: <%= entry.rating %></p>
+                    <p>Summary: <%= entry.summary %></p>
+                    <% if (entry.user_id === userId) { %>
+                        <a href="/edit/<%= entry.id %>">Edit</a>
+                        <form action="/delete/<%= entry.id %>" method="POST" style="display: inline;">
+                            <button type="submit">Delete</button>
+                        </form>
+                    <% } %>
+                </div>
+            </div>
+        <% }) %>
+    </div>
+    <a href="/add" class="add-link">Add New Entry</a>
+    <% if (!userId) { %>
+        <a href="/login" class="add-link">Login</a>
+        <a href="/register" class="add-link">Register</a>
+    <% } else { %>
+        <a href="/logout" class="add-link">Logout</a>
+    <% } %>
+</div>
+
+<script>
+    function showDetails(entryId) {
+        var detailsDiv = document.getElementById('details-' + entryId);
+        if (detailsDiv.style.display === 'none') {
+            detailsDiv.style.display = 'block';
+        } else {
+            detailsDiv.style.display = 'none';
+        }
+    }
+</script>
+</body>
+</html>

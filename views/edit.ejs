@@ -1,0 +1,33 @@
+<!-- views/edit.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Entry</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="header">Edit Entry</h1>
+        <form class="form-container" action="/edit/<%= entry.id %>" method="POST">
+            <label for="name">Name:</label>
+            <input type="text" id="name" name="name" value="<%= entry.name %>" required><br>
+            <label for="progress">Progress:</label>
+            <select id="progress" name="progress" required>
+                <option value="Just Started" <%= entry.progress === 'Just Started' ? 'selected' : '' %>>Just Started</option>
+                <option value="In Progress" <%= entry.progress === 'In Progress' ? 'selected' : '' %>>In Progress</option>
+                <option value="Finished" <%= entry.progress === 'Finished' ? 'selected' : '' %>>Finished</option>
+            </select><br>
+            <label for="rating">Rating:</label>
+            <input type="number" id="rating" name="rating" min="1" max="10" value="<%= entry.rating %>" required><br>
+            <label for="summary">Summary:</label><br>
+            <textarea id="summary" name="summary" rows="4" cols="50" required><%= entry.summary %></textarea><br>
+            <label for="image_url">Image URL:</label>
+            <input type="text" id="image_url" name="image_url" value="<%= entry.image_url %>" required><br>
+            <button type="submit">Update Entry</button>
+        </form>
+        <a href="/" class="add-link">Back to Home</a>
+    </div>
+</body>
+</html>

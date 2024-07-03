@@ -35,21 +35,25 @@
     <div class="list-container">
         <% entries.forEach(entry => { %>
             <div class="entry">
-                <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="showDetails('<%= entry.id %>')">
-                <div id="details-<%= entry.id %>" style="display: none;">
-                    <h2><%= entry.name %></h2>
-                    <p>Progress: <%= entry.progress %></p>
-                    <p>Rating: <%= entry.rating %></p>
-                    <p>Summary: <%= entry.summary %></p>
-                    <% if (entry.user_id === userId) { %>
-                        <a href="/edit/<%= entry.id %>">Edit</a>
-                        <form action="/delete/<%= entry.id %>" method="POST" style="display: inline;">
-                            <button type="submit">Delete</button>
-                        </form>
-                    <% } %>
+              <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="showDetails('<%= entry.id %>')">
+              <div id="details-<%= entry.id %>" style="display: none;">
+                <h2><%= entry.name %></h2>
+                <p>Progress: <%= entry.progress %></p>
+                <p>Rating: <%= entry.rating %></p>
+                <p>Summary: <%= entry.summary %></p>
+                <div class="like-dislike">
+                  <form action="/like/<%= entry.id %>" method="POST" style="display: inline;">
+                    <button type="submit">Like</button>
+                  </form>
+                  <form action="/dislike/<%= entry.id %>" method="POST" style="display: inline;">
+                    <button type="submit">Dislike</button>
+                  </form>
+                  <p>Likes: <%= entry.likes %> | Dislikes: <%= entry.dislikes %></p>
                 </div>
+              </div>
             </div>
-        <% }) %>
+          <% }) %>
+          
     </div>
     <a href="/add" class="add-link">Add New Entry</a>
     <% if (!userId) { %>

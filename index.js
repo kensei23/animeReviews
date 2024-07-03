@@ -244,8 +244,8 @@ function checkAuth(req, res, next) {
 
 // Home page route
 app.get('/', (req, res) => {
-  // Select the last 10 entries based on their IDs
-  pool.query('SELECT * FROM anime_entries ORDER BY id DESC LIMIT 20', (err, result) => {
+  // Select entries along with their like and dislike counts
+  pool.query('SELECT *, likes - dislikes AS rating FROM anime_entries ORDER BY id DESC LIMIT 20', (err, result) => {
     if (err) {
       console.error('Error executing query', err.stack);
       res.send('Error');
@@ -316,7 +316,7 @@ app.get('/logout', (req, res) => {
 app.get('/profile', checkAuth, async (req, res) => {
   try {
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.session.userId]);
-    const entriesResult = await pool.query('SELECT * FROM anime_entries WHERE user_id = $1', [req.session.userId]);
+    const entriesResult = await pool.query('SELECT *, likes - dislikes AS rating FROM anime_entries WHERE user_id = $1', [req.session.userId]);
     res.render('profile', { user: userResult.rows[0], userEntries: entriesResult.rows, userId: req.session.userId });
   } catch (error) {
     console.error('Error fetching profile data', error.stack);
@@ -397,6 +397,77 @@ app.post('/delete/:id', checkAuth, (req, res) => {
     }
   });
 });
+
+// Like an entry
+app.post('/like/:id', checkAuth, async (req, res) => {
+  const entryId = req.params.id;
+  try {
+    // Check if user has already liked or disliked this entry
+    const existingActionQuery = 'SELECT action FROM likes WHERE entry_id = $1 AND user_id = $2';
+    const existingActionValues = [entryId, req.session.userId];
+    const existingActionResult = await pool.query(existingActionQuery, existingActionValues);
+
+    if (existingActionResult.rows.length === 0) {
+      // User hasn't liked or disliked this entry yet, proceed with like
+      await pool.query('UPDATE anime_entries SET likes = likes + 1 WHERE id = $1', [entryId]);
+      // Record the user's like action
+      const insertQuery = 'INSERT INTO likes (entry_id, user_id, action) VALUES ($1, $2, $3)';
+      const insertValues = [entryId, req.session.userId, 'like'];
+      await pool.query(insertQuery, insertValues);
+    } else {
+      const currentAction = existingActionResult.rows[0].action;
+      if (currentAction === 'dislike') {
+        // Toggle from dislike to like
+        await pool.query('UPDATE anime_entries SET dislikes = dislikes - 1, likes = likes + 1 WHERE id = $1', [entryId]);
+        await pool.query('UPDATE likes SET action = $1 WHERE entry_id = $2 AND user_id = $3', ['like', entryId, req.session.userId]);
+      } else if (currentAction === 'like') {
+        // Remove previous like
+        await pool.query('UPDATE anime_entries SET likes = likes - 1 WHERE id = $1', [entryId]);
+        await pool.query('DELETE FROM likes WHERE entry_id = $1 AND user_id = $2', [entryId, req.session.userId]);
+      }
+    }
+    res.redirect('/');
+  } catch (error) {
+    console.error('Error executing query', error.stack);
+    res.send('Error');
+  }
+});
+
+// Dislike an entry
+app.post('/dislike/:id', checkAuth, async (req, res) => {
+  const entryId = req.params.id;
+  try {
+    // Check if user has already liked or disliked this entry
+    const existingActionQuery = 'SELECT action FROM likes WHERE entry_id = $1 AND user_id = $2';
+    const existingActionValues = [entryId, req.session.userId];
+    const existingActionResult = await pool.query(existingActionQuery, existingActionValues);
+
+    if (existingActionResult.rows.length === 0) {
+      // User hasn't liked or disliked this entry yet, proceed with dislike
+      await pool.query('UPDATE anime_entries SET dislikes = dislikes + 1 WHERE id = $1', [entryId]);
+      // Record the user's dislike action
+      const insertQuery = 'INSERT INTO likes (entry_id, user_id, action) VALUES ($1, $2, $3)';
+      const insertValues = [entryId, req.session.userId, 'dislike'];
+      await pool.query(insertQuery, insertValues);
+    } else {
+      const currentAction = existingActionResult.rows[0].action;
+      if (currentAction === 'like') {
+        // Toggle from like to dislike
+        await pool.query('UPDATE anime_entries SET likes = likes - 1, dislikes = dislikes + 1 WHERE id = $1', [entryId]);
+        await pool.query('UPDATE likes SET action = $1 WHERE entry_id = $2 AND user_id = $3', ['dislike', entryId, req.session.userId]);
+      } else if (currentAction === 'dislike') {
+        // Remove previous dislike
+        await pool.query('UPDATE anime_entries SET dislikes = dislikes - 1 WHERE id = $1', [entryId]);
+        await pool.query('DELETE FROM likes WHERE entry_id = $1 AND user_id = $2', [entryId, req.session.userId]);
+      }
+    }
+    res.redirect('/');
+  } catch (error) {
+    console.error('Error executing query', error.stack);
+    res.send('Error');
+  }
+});
+
 
 // Search route
 app.get('/search', (req, res) => {

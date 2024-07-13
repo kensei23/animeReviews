@@ -2,42 +2,38 @@
 import fetch from 'node-fetch';
 
 async function fetchPopularAnime() {
-  const query = `
-    query {
-      Page(page: 1, perPage: 5) {
-        media(sort: POPULARITY_DESC, type: ANIME) {
-          id
-          title {
-            romaji
-            english
-          }
-          coverImage {
-            large
-          }
-          averageScore
-        }
-      }
-    }
-  `;
-
-  const url = 'https://graphql.anilist.co';
-  const options = {
+  const response = await fetch('https://graphql.anilist.co', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
-    body: JSON.stringify({ query }),
-  };
+    body: JSON.stringify({
+      query: `
+        query {
+          Page(page: 1, perPage: 5) {
+            media(sort: SCORE_DESC, type: ANIME) {
+              id
+              title {
+                romaji
+              }
+              averageScore
+              coverImage {
+                large
+              }
+            }
+          }
+        }
+      `,
+    }),
+  });
 
-  try {
-    const response = await fetch(url, options);
-    const data = await response.json();
-    return data.data.Page.media;
-  } catch (error) {
-    console.error('Error fetching popular anime:', error);
-    return [];
+  if (!response.ok) {
+    throw new Error('Failed to fetch popular anime');
   }
+
+  const popularAnimeData = await response.json();
+  return popularAnimeData.data.Page.media;
 }
 
 export default fetchPopularAnime;

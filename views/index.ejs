@@ -51,14 +51,18 @@
 </div>
 
 <div class="popular-anime">
-    <h2>Highest rated Anime</h2>
-    <% popularAnime.forEach(anime => { %>
-        <div class="anime-entry">
-            <img src="<%= anime.coverImage.large %>" alt="<%= anime.title.romaji %>">
-            <h3><%= anime.title.romaji %></h3>
-            <p>Score: <%= anime.averageScore %></p>
-        </div>
-    <% }) %>
+    <h2>Highest Rated Anime</h2>
+    <% if (popularAnime && popularAnime.length > 0) { %>
+        <% popularAnime.forEach(anime => { %>
+            <div class="anime-entry">
+                <img src="<%= anime.coverImage.large %>" alt="<%= anime.title.romaji %>">
+                <h3><%= anime.title.romaji %></h3>
+                <p>Score: <%= anime.averageScore %></p>
+            </div>
+        <% }) %>
+    <% } else { %>
+        <p>No popular anime found.</p>
+    <% } %>
 </div>
 
 <div class="container">

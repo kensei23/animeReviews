@@ -246,11 +246,8 @@ function checkAuth(req, res, next) {
 /// Home page route
 app.get('/', async (req, res) => {
   try {
-    // Fetch popular anime
-    const popularAnime = await fetchPopularAnime();
-
-    // Select entries along with their like and dislike counts
     const result = await pool.query('SELECT *, likes - dislikes AS rating FROM anime_entries ORDER BY id DESC LIMIT 20');
+    const popularAnime = await fetchPopularAnime();
     res.render('index', { entries: result.rows, userId: req.session.userId, popularAnime });
   } catch (err) {
     console.error('Error executing query', err.stack);
@@ -473,18 +470,18 @@ app.post('/dislike/:id', checkAuth, async (req, res) => {
 
 
 // Search route
-app.get('/search', (req, res) => {
+app.get('/search', async (req, res) => {
   const searchTerm = req.query.term;
   const query = 'SELECT * FROM anime_entries WHERE name ILIKE $1';
   const values = [`%${searchTerm}%`];
-  pool.query(query, values, (err, result) => {
-    if (err) {
-      console.error('Error executing query', err.stack);
-      res.send('Error');
-    } else {
-      res.render('index', { entries: result.rows, userId: req.session.userId });
-    }
-  });
+  try {
+    const result = await pool.query(query, values);
+    const popularAnime = await fetchPopularAnime();
+    res.render('index', { entries: result.rows, userId: req.session.userId, popularAnime });
+  } catch (err) {
+    console.error('Error executing query', err.stack);
+    res.send('Error');
+  }
 });
 
 app.listen(PORT, () => {

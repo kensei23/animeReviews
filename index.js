@@ -312,6 +312,39 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
+app.get('/api/popular-anime', async (req, res) => {
+  try {
+    const query = `
+      query {
+        Page(perPage: 50) {
+          media(sort: POPULARITY_DESC, type: ANIME) {
+            id
+            title {
+              romaji
+            }
+            coverImage {
+              large
+            }
+          }
+        }
+      }
+    `;
+    const response = await fetch('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({ query }),
+    });
+    const { data } = await response.json();
+    res.json(data.Page.media);
+  } catch (error) {
+    console.error('Error fetching popular anime:', error);
+    res.status(500).send('Error fetching popular anime');
+  }
+});
+
 // Profile page route
 app.get('/profile', checkAuth, async (req, res) => {
   try {
@@ -343,9 +376,9 @@ app.get('/add', checkAuth, (req, res) => {
 
 // Add entry form submission route
 app.post('/add', checkAuth, (req, res) => {
-  const { name, progress, rating, summary, image_url } = req.body;
+  const { animeTitle, progress, rating, summary, image_url } = req.body;
   const query = 'INSERT INTO anime_entries (name, progress, rating, summary, image_url, user_id) VALUES ($1, $2, $3, $4, $5, $6)';
-  const values = [name, progress, rating, summary, image_url, req.session.userId];
+  const values = [animeTitle, progress, rating, summary, image_url, req.session.userId];
   pool.query(query, values, (err) => {
     if (err) {
       console.error('Error executing query', err.stack);
@@ -357,32 +390,36 @@ app.post('/add', checkAuth, (req, res) => {
 });
 
 // Edit entry page
-app.get('/edit/:id', checkAuth, (req, res) => {
+app.get('/edit/:id', checkAuth, async (req, res) => {
   const entryId = req.params.id;
-  pool.query('SELECT * FROM anime_entries WHERE id = $1 AND user_id = $2', [entryId, req.session.userId], (err, result) => {
-    if (err) {
+  try {
+      const result = await pool.query('SELECT * FROM anime_entries WHERE id = $1 AND user_id = $2', [entryId, req.session.userId]);
+      const entry = result.rows[0];
+
+      if (!entry) {
+          return res.send('Entry not found or you do not have permission to edit it');
+      }
+
+      res.render('edit', { entry, userId: req.session.userId });
+  } catch (err) {
       console.error('Error executing query', err.stack);
       res.send('Error');
-    } else {
-      res.render('edit', { entry: result.rows[0] });
-    }
-  });
+  }
 });
 
 // Edit entry form submission route
-app.post('/edit/:id', checkAuth, (req, res) => {
+app.post('/edit/:id', checkAuth, async (req, res) => {
   const entryId = req.params.id;
-  const { name, progress, rating, summary, image_url } = req.body;
-  const query = 'UPDATE anime_entries SET name = $1, progress = $2, rating = $3, summary = $4, image_url = $5 WHERE id = $6 AND user_id = $7';
-  const values = [name, progress, rating, summary, image_url, entryId, req.session.userId];
-  pool.query(query, values, (err) => {
-    if (err) {
+  const { progress, rating, summary } = req.body;
+  const query = 'UPDATE anime_entries SET progress = $1, rating = $2, summary = $3 WHERE id = $4 AND user_id = $5';
+  const values = [progress, rating, summary, entryId, req.session.userId];
+  try {
+      await pool.query(query, values);
+      res.redirect('/');
+  } catch (err) {
       console.error('Error executing query', err.stack);
       res.send('Error');
-    } else {
-      res.redirect('/');
-    }
-  });
+  }
 });
 
 // Delete entry route
@@ -488,3 +525,6 @@ app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
 
+// IDEAS FOR THE WEBSITE:
+// Add an option to make the blank space next to the image say SPOILER before clicking on it to warn people
+// Profile pictures and have them carry over onto the logo.

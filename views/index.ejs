@@ -80,6 +80,12 @@
                 <p>Progress: <%= entry.progress %></p>
                 <p>Rating: <%= entry.rating %></p>
                 <p>Summary: <%= entry.summary %></p>
+                <% if (entry.user_id === userId) { %>
+                    <a href="/edit/<%= entry.id %>">Edit</a>
+                    <form action="/delete/<%= entry.id %>" method="POST" style="display:inline;">
+                        <button type="submit">Delete</button>
+                    </form>
+                <% } %>
                 <div class="like-dislike">
                   <form action="/like/<%= entry.id %>" method="POST" style="display: inline;">
                     <button type="submit">Like</button>
@@ -95,12 +101,6 @@
           
     </div>
     <a href="/add" class="add-link">Add New Entry</a>
-    <% if (!userId) { %>
-        <a href="/login" class="add-link">Login</a>
-        <a href="/register" class="add-link">Register</a>
-    <% } else { %>
-        <a href="/logout" class="add-link">Logout</a>
-    <% } %>
 </div>
 
 <script>

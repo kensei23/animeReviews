@@ -11,8 +11,6 @@
     <div class="container">
         <h1 class="header">Edit Entry</h1>
         <form class="form-container" action="/edit/<%= entry.id %>" method="POST">
-            <label for="name">Name:</label>
-            <input type="text" id="name" name="name" value="<%= entry.name %>" required><br>
             <label for="progress">Progress:</label>
             <select id="progress" name="progress" required>
                 <option value="Just Started" <%= entry.progress === 'Just Started' ? 'selected' : '' %>>Just Started</option>
@@ -23,8 +21,6 @@
             <input type="number" id="rating" name="rating" min="1" max="10" value="<%= entry.rating %>" required><br>
             <label for="summary">Summary:</label><br>
             <textarea id="summary" name="summary" rows="4" cols="50" required><%= entry.summary %></textarea><br>
-            <label for="image_url">Image URL:</label>
-            <input type="text" id="image_url" name="image_url" value="<%= entry.image_url %>" required><br>
             <button type="submit">Update Entry</button>
         </form>
         <a href="/" class="add-link">Back to Home</a>

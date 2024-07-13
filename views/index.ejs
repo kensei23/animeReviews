@@ -6,6 +6,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anime Blog</title>
     <link rel="stylesheet" href="/styles.css">
+    <style>
+        .popular-anime {
+            float: left;
+            width: 20%; /* Increase width */
+            margin-right: 2%;
+            padding-left: 20px; /* Add padding to the left */
+        }
+        .popular-anime img {
+            width: 80%; /* Adjust the width to make images smaller */
+            border-radius: 8px;
+        }
+        .popular-anime h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+        }
+        .container {
+            width: 70%; /* Decrease width */
+            float: right;
+            padding-right: 10%;
+        }
+        .anime-entry {
+            text-align: center; /* Center align text and images */
+        }
+    </style>
 </head>
 <body>
 
@@ -24,6 +48,17 @@
             <a href="/login" class="nav-link">Login</a>
         <% } %>
     </div>
+</div>
+
+<div class="popular-anime">
+    <h2>Highest rated Anime</h2>
+    <% popularAnime.forEach(anime => { %>
+        <div class="anime-entry">
+            <img src="<%= anime.coverImage.large %>" alt="<%= anime.title.romaji %>">
+            <h3><%= anime.title.romaji %></h3>
+            <p>Score: <%= anime.averageScore %></p>
+        </div>
+    <% }) %>
 </div>
 
 <div class="container">

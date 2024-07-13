@@ -203,6 +203,7 @@ import bcrypt from 'bcrypt';
 import path from 'path';
 import env from 'dotenv';
 import { fileURLToPath } from 'url';
+import fetchPopularAnime from './apiHelper.js'
 
 const { Pool } = pg;
 const app = express();
@@ -242,17 +243,19 @@ function checkAuth(req, res, next) {
   }
 }
 
-// Home page route
-app.get('/', (req, res) => {
-  // Select entries along with their like and dislike counts
-  pool.query('SELECT *, likes - dislikes AS rating FROM anime_entries ORDER BY id DESC LIMIT 20', (err, result) => {
-    if (err) {
-      console.error('Error executing query', err.stack);
-      res.send('Error');
-    } else {
-      res.render('index', { entries: result.rows, userId: req.session.userId });
-    }
-  });
+/// Home page route
+app.get('/', async (req, res) => {
+  try {
+    // Fetch popular anime
+    const popularAnime = await fetchPopularAnime();
+
+    // Select entries along with their like and dislike counts
+    const result = await pool.query('SELECT *, likes - dislikes AS rating FROM anime_entries ORDER BY id DESC LIMIT 20');
+    res.render('index', { entries: result.rows, userId: req.session.userId, popularAnime });
+  } catch (err) {
+    console.error('Error executing query', err.stack);
+    res.send('Error');
+  }
 });
 
 // Registration page

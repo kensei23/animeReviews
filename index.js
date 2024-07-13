@@ -246,7 +246,7 @@ function checkAuth(req, res, next) {
 /// Home page route
 app.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT *, likes - dislikes AS rating FROM anime_entries ORDER BY id DESC LIMIT 20');
+    const result = await pool.query('SELECT * FROM anime_entries ORDER BY id DESC LIMIT 20');
     const popularAnime = await fetchPopularAnime();
     res.render('index', { entries: result.rows, userId: req.session.userId, popularAnime });
   } catch (err) {

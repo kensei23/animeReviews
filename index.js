@@ -312,6 +312,7 @@ app.get('/logout', (req, res) => {
   res.redirect('/');
 });
 
+// Handle API query
 app.get('/api/popular-anime', async (req, res) => {
   try {
     const query = `
@@ -349,7 +350,7 @@ app.get('/api/popular-anime', async (req, res) => {
 app.get('/profile', checkAuth, async (req, res) => {
   try {
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.session.userId]);
-    const entriesResult = await pool.query('SELECT *, likes - dislikes AS rating FROM anime_entries WHERE user_id = $1', [req.session.userId]);
+    const entriesResult = await pool.query('SELECT * FROM anime_entries WHERE user_id = $1', [req.session.userId]);
     res.render('profile', { user: userResult.rows[0], userEntries: entriesResult.rows, userId: req.session.userId });
   } catch (error) {
     console.error('Error fetching profile data', error.stack);
@@ -376,16 +377,17 @@ app.get('/add', checkAuth, (req, res) => {
 
 // Add entry form submission route
 app.post('/add', checkAuth, (req, res) => {
-  const { animeTitle, progress, rating, summary, image_url } = req.body;
-  const query = 'INSERT INTO anime_entries (name, progress, rating, summary, image_url, user_id) VALUES ($1, $2, $3, $4, $5, $6)';
-  const values = [animeTitle, progress, rating, summary, image_url, req.session.userId];
+  const { name, progress, rating, summary, image_url, spoiler } = req.body;
+  const isSpoiler = spoiler === 'on'; // Convert checkbox value to boolean
+  const query = 'INSERT INTO anime_entries (name, progress, rating, summary, image_url, spoiler, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7)';
+  const values = [name, progress, rating, summary, image_url, isSpoiler, req.session.userId];
   pool.query(query, values, (err) => {
-    if (err) {
-      console.error('Error executing query', err.stack);
-      res.send('Error');
-    } else {
-      res.redirect('/');
-    }
+      if (err) {
+          console.error('Error executing query', err.stack);
+          res.send('Error');
+      } else {
+          res.redirect('/');
+      }
   });
 });
 
@@ -408,19 +410,22 @@ app.get('/edit/:id', checkAuth, async (req, res) => {
 });
 
 // Edit entry form submission route
-app.post('/edit/:id', checkAuth, async (req, res) => {
+app.post('/edit/:id', checkAuth, (req, res) => {
   const entryId = req.params.id;
-  const { progress, rating, summary } = req.body;
-  const query = 'UPDATE anime_entries SET progress = $1, rating = $2, summary = $3 WHERE id = $4 AND user_id = $5';
-  const values = [progress, rating, summary, entryId, req.session.userId];
-  try {
-      await pool.query(query, values);
-      res.redirect('/');
-  } catch (err) {
-      console.error('Error executing query', err.stack);
-      res.send('Error');
-  }
+  const { progress, rating, summary, spoiler } = req.body;
+  const isSpoiler = spoiler === 'on'; // Convert checkbox value to boolean
+  const query = 'UPDATE anime_entries SET progress = $1, rating = $2, summary = $3, spoiler = $4 WHERE id = $5 AND user_id = $6';
+  const values = [progress, rating, summary, isSpoiler, entryId, req.session.userId];
+  pool.query(query, values, (err) => {
+      if (err) {
+          console.error('Error executing query', err.stack);
+          res.send('Error');
+      } else {
+          res.redirect('/');
+      }
+  });
 });
+
 
 // Delete entry route
 app.post('/delete/:id', checkAuth, (req, res) => {
@@ -526,5 +531,6 @@ app.listen(PORT, () => {
 });
 
 // IDEAS FOR THE WEBSITE:
-// Add an option to make the blank space next to the image say SPOILER before clicking on it to warn people
+// Add an option to make the blank space next to the image say SPOILER before clicking on it to warn people COMPLETE!!!!
 // Profile pictures and have them carry over onto the logo.
+// Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site.

@@ -6,30 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Anime Blog</title>
     <link rel="stylesheet" href="/styles.css">
-    <style>
-        .popular-anime {
-            float: left;
-            width: 20%; /* Increase width */
-            margin-right: 2%;
-            padding-left: 20px; /* Add padding to the left */
-        }
-        .popular-anime img {
-            width: 80%; /* Adjust the width to make images smaller */
-            border-radius: 8px;
-        }
-        .popular-anime h2 {
-            font-size: 1.2em;
-            margin-bottom: 10px;
-        }
-        .container {
-            width: 60%; /* Decrease width */
-            float: right;
-            padding-right: 10%;
-        }
-        .anime-entry {
-            text-align: center; /* Center align text and images */
-        }
-    </style>
 </head>
 <body>
 
@@ -74,8 +50,11 @@
     <div class="list-container">
         <% entries.forEach(entry => { %>
             <div class="entry">
-              <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="showDetails('<%= entry.id %>')">
-              <div id="details-<%= entry.id %>" style="display: none;">
+              <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="toggleDetails('<%= entry.id %>')">
+              <% if (entry.spoiler) { %>
+                  <p class="spoiler-warning" id="spoiler-<%= entry.id %>">THIS POST CONTAINS SPOILERS</p>
+              <% } %>
+              <div id="details-<%= entry.id %>" class="entry-details">
                 <h2><%= entry.name %></h2>
                 <p>Progress: <%= entry.progress %></p>
                 <p>Rating: <%= entry.rating %></p>
@@ -104,12 +83,19 @@
 </div>
 
 <script>
-    function showDetails(entryId) {
+    function toggleDetails(entryId) {
         var detailsDiv = document.getElementById('details-' + entryId);
+        var spoilerWarning = document.getElementById('spoiler-' + entryId);
         if (detailsDiv.style.display === 'none') {
             detailsDiv.style.display = 'block';
+            if (spoilerWarning) {
+                spoilerWarning.style.display = 'none';
+            }
         } else {
             detailsDiv.style.display = 'none';
+            if (spoilerWarning) {
+                spoilerWarning.style.display = 'block';
+            }
         }
     }
 </script>

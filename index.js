@@ -205,6 +205,9 @@ import env from 'dotenv';
 import { fileURLToPath } from 'url';
 import fetchPopularAnime from './apiHelper.js'
 import multer from 'multer';
+import sharp from 'sharp';
+import fs from 'fs';
+
 
 const { Pool } = pg;
 const app = express();
@@ -381,21 +384,21 @@ app.get('/profile', checkAuth, async (req, res) => {
   try {
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.session.userId]);
     const entriesResult = await pool.query('SELECT * FROM anime_entries WHERE user_id = $1', [req.session.userId]);
+    
     let userProfilePicture = null;
-    if (req.session.userId) {
-      const query = 'SELECT profile_picture FROM users WHERE id = $1';
-      const values = [req.session.userId];
-      const userResult = await pool.query(query, values);
-      
-      if (userResult.rows.length > 0) {
-        userProfilePicture = userResult.rows[0].profile_picture;
-      }
+    if (userResult.rows.length > 0) {
+      userProfilePicture = userResult.rows[0].profile_picture;
     }
-    res.render('profile', { user: userResult.rows[0], userEntries: entriesResult.rows, userId: req.session.userId, userProfilePicture });
+
+    res.render('profile', { 
+      user: userResult.rows[0], 
+      userEntries: entriesResult.rows, 
+      userId: req.session.userId, 
+      userProfilePicture 
+    });
   } catch (error) {
     console.error('Error fetching profile data', error.stack);
     res.send('Error');
-    
   }
 });
 
@@ -414,11 +417,43 @@ app.post('/profile/update', checkAuth, async (req, res) => {
 //PFP upload
 app.post('/upload-pfp', checkAuth, upload.single('profile_picture'), async (req, res) => {
   try {
+    const userId = req.session.userId;
     const profilePicturePath = req.file ? `/uploads/${req.file.filename}` : null;
-    const query = 'UPDATE users SET profile_picture = $1 WHERE id = $2';
-    const values = [profilePicturePath, req.session.userId];
-    await pool.query(query, values);
-    res.redirect('/profile');
+
+    if (profilePicturePath) {
+      const filePath = req.file.path;
+      const outputFilePath = `uploads/${userId}-profile.png`;
+
+      const roundedCorners = Buffer.from(
+        `<svg>
+           <circle cx="100" cy="100" r="100"/>
+         </svg>`
+      );
+
+      await sharp(filePath)
+        .resize(200, 200, {
+          fit: sharp.fit.cover,
+          position: sharp.strategy.entropy
+        }) // Ensure the image is a square
+        .composite([{ 
+          input: roundedCorners,
+          blend: 'dest-in'
+        }])
+        .png() // Output as PNG to support transparency
+        .toFile(outputFilePath);
+
+      // Delete the original uploaded file to save space
+      fs.unlinkSync(filePath);
+
+      // Update the database with the new profile picture path
+      const query = 'UPDATE users SET profile_picture = $1 WHERE id = $2';
+      const values = [outputFilePath, userId];
+      await pool.query(query, values);
+
+      res.redirect('/profile');
+    } else {
+      res.redirect('/profile');
+    }
   } catch (err) {
     console.error('Error updating profile picture', err.stack);
     res.send('Error');
@@ -574,7 +609,17 @@ app.get('/search', async (req, res) => {
   try {
     const result = await pool.query(query, values);
     const popularAnime = await fetchPopularAnime();
-    res.render('index', { entries: result.rows, userId: req.session.userId, popularAnime });
+    let userProfilePicture = null;
+    if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+      
+      if (userResult.rows.length > 0) {
+        userProfilePicture = userResult.rows[0].profile_picture;
+      }
+    }
+    res.render('index', { entries: result.rows, userId: req.session.userId, popularAnime, userProfilePicture });
   } catch (err) {
     console.error('Error executing query', err.stack);
     res.send('Error');
@@ -586,6 +631,6 @@ app.listen(PORT, () => {
 });
 
 // IDEAS FOR THE WEBSITE:
-// Add an option to make the blank space next to the image say SPOILER before clicking on it to warn people COMPLETE!!!!
-// Profile pictures and have them carry over onto the logo.
-// Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site.
+// Add an option to make the blank space next to the image say SPOILER before clicking on it to warn people      COMPLETE!!!!
+// Profile pictures and have them carry over onto the logo.           PARTIAL.
+// Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

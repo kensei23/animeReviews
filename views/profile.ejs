@@ -47,12 +47,17 @@
             <input type="text" id="favorite_anime" name="favorite_anime" value="<%= user.favorite_anime %>">
             <button type="submit">Update</button>
         </form>
-        <form action="/upload-pfp" method="POST" enctype="multipart/form-data">
-            <label for="pfp">Upload Profile Picture:</label>
-            <input type="file" name="profile_picture" id="pfp" accept="image/*" required>
-            <button type="submit">Upload</button>
-        </form>
+        <div>
+            <% if (user.profile_picture) { %>
+                <img src="<%= user.profile_picture %>" alt="Profile Picture" class="profile-pic">
+            <% } %>
+            <form id="profilePicForm" action="/upload-pfp" method="POST" enctype="multipart/form-data" onsubmit="return confirmProfilePicUpload()">
+                <input type="file" name="profile_picture" accept="image/*" required>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
     </div>
+
     <!-- Displaying User Entries -->
     <div class="list-container">
         <h2>Your Entries</h2>
@@ -86,7 +91,11 @@
             } else {
                 detailsDiv.style.display = 'none';
             }
-        }
+        };
+
+        function confirmProfilePicUpload() {
+            return confirm('You already have a profile picture. Would you like to replace it?');
+        };
     </script>
 </div>
 

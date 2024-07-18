@@ -12,7 +12,13 @@
 <!-- Navigation Bar -->
 <div class="navbar">
     <div class="navbar-logo">
-        <a href="/profile"><img src="/logo.png" alt="Logo"></a>
+        <a href="/profile">
+            <% if (userProfilePicture) { %>
+                <img src="<%= userProfilePicture %>" alt="Profile Picture" class="profile-pic">
+            <% } else { %>
+                <img src="/logo.png" alt="Profile Picture" class="profile-pic">
+            <% } %>
+        </a>
         <span class="navbar-title">Anime Blog</span>
     </div>
     <div class="navbar-links">
@@ -41,7 +47,7 @@
     <% } %>
 </div>
 
-<div class="container">
+<div class="container" id="indexCont">
     <h1 class="header">Anime Thoughts</h1>
     <form class="form-container" action="/search" method="GET">
         <input type="text" name="term" placeholder="Search...">

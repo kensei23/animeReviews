@@ -204,6 +204,7 @@ import path from 'path';
 import env from 'dotenv';
 import { fileURLToPath } from 'url';
 import fetchPopularAnime from './apiHelper.js'
+import multer from 'multer';
 
 const { Pool } = pg;
 const app = express();
@@ -227,6 +228,7 @@ const __dirname = path.dirname(__filename);
 app.set('view engine', 'ejs');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use(session({
   secret: 'your_secret_key',
@@ -243,12 +245,40 @@ function checkAuth(req, res, next) {
   }
 }
 
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${req.session.userId}-${Date.now()}${path.extname(file.originalname)}`);
+  }
+});
+
+const upload = multer({ storage });
+
 /// Home page route
 app.get('/', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM anime_entries ORDER BY id DESC LIMIT 20');
     const popularAnime = await fetchPopularAnime();
-    res.render('index', { entries: result.rows, userId: req.session.userId, popularAnime });
+    
+    let userProfilePicture = null;
+    if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+      
+      if (userResult.rows.length > 0) {
+        userProfilePicture = userResult.rows[0].profile_picture;
+      }
+    }
+
+    res.render('index', {
+      entries: result.rows,
+      userId: req.session.userId,
+      popularAnime,
+      userProfilePicture
+    });
   } catch (err) {
     console.error('Error executing query', err.stack);
     res.send('Error');
@@ -351,10 +381,21 @@ app.get('/profile', checkAuth, async (req, res) => {
   try {
     const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.session.userId]);
     const entriesResult = await pool.query('SELECT * FROM anime_entries WHERE user_id = $1', [req.session.userId]);
-    res.render('profile', { user: userResult.rows[0], userEntries: entriesResult.rows, userId: req.session.userId });
+    let userProfilePicture = null;
+    if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+      
+      if (userResult.rows.length > 0) {
+        userProfilePicture = userResult.rows[0].profile_picture;
+      }
+    }
+    res.render('profile', { user: userResult.rows[0], userEntries: entriesResult.rows, userId: req.session.userId, userProfilePicture });
   } catch (error) {
     console.error('Error fetching profile data', error.stack);
     res.send('Error');
+    
   }
 });
 
@@ -366,6 +407,20 @@ app.post('/profile/update', checkAuth, async (req, res) => {
     res.redirect('/profile');
   } catch (error) {
     console.error('Error updating profile', error.stack);
+    res.send('Error');
+  }
+});
+
+//PFP upload
+app.post('/upload-pfp', checkAuth, upload.single('profile_picture'), async (req, res) => {
+  try {
+    const profilePicturePath = req.file ? `/uploads/${req.file.filename}` : null;
+    const query = 'UPDATE users SET profile_picture = $1 WHERE id = $2';
+    const values = [profilePicturePath, req.session.userId];
+    await pool.query(query, values);
+    res.redirect('/profile');
+  } catch (err) {
+    console.error('Error updating profile picture', err.stack);
     res.send('Error');
   }
 });

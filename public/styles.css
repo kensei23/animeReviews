@@ -12,8 +12,22 @@ body {
   margin: 0 auto;
   padding: 20px;
   width: 60%; /* Decrease width */
+}
+
+#indexCont{
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  width: 60%; /* Decrease width */
   float: right;
   padding-right: 10%;
+}
+
+.profile-pic {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .navbar {
@@ -68,34 +82,6 @@ body {
 
 .search-form button:hover {
   background-color: #0056b3;
-}
-
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  padding-right: 10%;
-  width: 60%; 
-  float: right;
-}
-
-.navbar {
-  background-color: #333;
-  color: #fff;
-  padding: 15px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.navbar-logo img {
-  width: 40px; /* Adjust as needed */
-  height: auto;
-}
-
-.navbar-title {
-  font-size: 24px;
 }
 
 .header h1 {

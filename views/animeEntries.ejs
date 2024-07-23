@@ -1,0 +1,76 @@
+<!-- views/animeEntries.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= animeName %> - Entries</title>
+    <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+    <% console.log('userProfilePicture:', userProfilePicture); %>
+    <% console.log('animeEntries:', entries); %>
+<!-- Navigation Bar -->
+<div class="navbar">
+    <div class="navbar-logo">
+        <a href="/profile">
+            <% if (userProfilePicture) { %>
+                <img src="<%= userProfilePicture %>" alt="Profile Picture" class="profile-pic">
+            <% } else { %>
+                <img src="/logo.png" alt="Profile Picture" class="profile-pic">
+            <% } %>
+        </a>
+        <span class="navbar-title">Anime Blog</span>
+    </div>
+    <div class="navbar-links">
+        <a href="/" class="nav-link">Home</a>
+        <a href="/add" class="nav-link">Add Entry</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
+        <% if (userId) { %>
+            <a href="/logout" class="nav-link">Logout</a>
+        <% } else { %>
+            <a href="/login" class="nav-link">Login</a>
+        <% } %>
+    </div>
+</div>
+
+<!-- Anime Entries Content -->
+<div class="container">
+    <h1>Entries for <%= animeName %></h1>
+    <div class="list-container">
+        <% if (entries.length > 0) { %>
+            <% entries.forEach(entry => { %>
+                <div class="entry">
+                    <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="showDetails('<%= entry.id %>')">
+                    <div id="details-<%= entry.id %>" style="display: none;">
+                        <h2><%= entry.name %></h2>
+                        <p>Progress: <%= entry.progress %></p>
+                        <p>Rating: <%= entry.rating %></p>
+                        <p>Summary: <%= entry.summary %></p>
+                        <% if (entry.user_id === userId) { %>
+                            <a href="/edit/<%= entry.id %>">Edit</a>
+                            <form action="/delete/<%= entry.id %>" method="POST" style="display:inline;">
+                                <button type="submit">Delete</button>
+                            </form>
+                        <% } %>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <p>No entries found for this anime.</p>
+        <% } %>
+    </div>
+</div>
+
+<script>
+    function showDetails(entryId) {
+        var detailsDiv = document.getElementById('details-' + entryId);
+        if (detailsDiv.style.display === 'none') {
+            detailsDiv.style.display = 'block';
+        } else {
+            detailsDiv.style.display = 'none';
+        }
+    };
+</script>
+</body>
+</html>

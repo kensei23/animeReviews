@@ -24,6 +24,7 @@
     <div class="navbar-links">
         <a href="/" class="nav-link">Home</a>
         <a href="/add" class="nav-link">Add Entry</a>
+        <a href="/watchlist" class="nav-link">Watchlist</a>
         <% if (userId) { %>
             <a href="/logout" class="nav-link">Logout</a>
         <% } else { %>
@@ -71,6 +72,9 @@
                         <button type="submit">Delete</button>
                     </form>
                 <% } %>
+                <form action="/watchlist/add/<%= entry.id %>" method="POST" style="display:inline;">
+                    <button type="submit">Add to Watchlist</button>
+                </form>
                 <div class="like-dislike">
                   <form action="/like/<%= entry.id %>" method="POST" style="display: inline;">
                     <button type="submit">Like</button>

@@ -185,6 +185,24 @@ body {
   text-decoration: underline;
 }
 
+/* Watchlist-specific styles */
+.watchlist-container {
+  width: 60%;
+  margin: 0 auto;
+}
+
+.watchlist-list-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.watchlist-entry {
+  text-align: center;
+  margin: 20px;
+}
+
+
 .spoiler-warning {
   display: none;
   font-size: 30px;

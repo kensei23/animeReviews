@@ -460,6 +460,85 @@ app.post('/upload-pfp', checkAuth, upload.single('profile_picture'), async (req,
   }
 });
 
+// Add to Watchlist
+app.post('/watchlist/add/:id', checkAuth, async (req, res) => {
+  const animeId = req.params.id;
+  const userId = req.session.userId;
+  let userProfilePicture = null;
+    if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+      
+      if (userResult.rows.length > 0) {
+        userProfilePicture = userResult.rows[0].profile_picture;
+      }
+    }
+  try {
+      // Check if the anime is already in the watchlist
+      const checkQuery = 'SELECT * FROM watchlist WHERE user_id = $1 AND anime_id = $2';
+      const checkResult = await pool.query(checkQuery, [userId, animeId]);
+      if (checkResult.rows.length > 0) {
+          return res.send('Anime already in watchlist');
+      }
+      const query = 'INSERT INTO watchlist (user_id, anime_id) VALUES ($1, $2)';
+      await pool.query(query, [userId, animeId]);
+      res.redirect('/watchlist');
+  } catch (err) {
+      console.error('Error adding to watchlist', err.stack);
+      res.send('Error');
+  }
+});
+
+// Get Watchlist
+app.get('/watchlist', checkAuth, async (req, res) => {
+  let userProfilePicture = null;
+    if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+      
+      if (userResult.rows.length > 0) {
+        userProfilePicture = userResult.rows[0].profile_picture;
+      }
+    }
+  try {
+      const query = `
+          SELECT anime_entries.* FROM watchlist
+          JOIN anime_entries ON watchlist.anime_id = anime_entries.id
+          WHERE watchlist.user_id = $1
+      `;
+      const result = await pool.query(query, [req.session.userId]);
+      res.render('watchlist', { watchlist: result.rows, userId: req.session.userId, userProfilePicture });
+  } catch (err) {
+      console.error('Error fetching watchlist', err.stack);
+      res.send('Error');
+  }
+});
+
+// Get Entries for anime in watchlist
+app.get('/anime/:name', async (req, res) => {
+    const animeName = req.params.name;
+    let userProfilePicture = null;
+    if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+      
+      if (userResult.rows.length > 0) {
+        userProfilePicture = userResult.rows[0].profile_picture;
+      }
+    }
+    try {
+        const query = 'SELECT * FROM anime_entries WHERE name = $1';
+        const result = await pool.query(query, [animeName]);
+        res.render('animeEntries', { entries: result.rows, animeName: animeName, userId: req.session.userId, userProfilePicture });
+    } catch (err) {
+        console.error('Error fetching anime entries', err.stack);
+        res.send('Error');
+    }
+});
+
 // Add entry form route
 app.get('/add', checkAuth, (req, res) => {
   res.render('add');
@@ -631,6 +710,7 @@ app.listen(PORT, () => {
 });
 
 // IDEAS FOR THE WEBSITE:
-// Add an option to make the blank space next to the image say SPOILER before clicking on it to warn people      COMPLETE!!!!
 // Profile pictures and have them carry over onto the logo.           PARTIAL.
+// Fix anime names, change them from the codes to the actual names.
+// Fix PFP bug in the /anime/ route, is being passed through but still wont load.
 // Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

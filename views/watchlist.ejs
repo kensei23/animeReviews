@@ -34,12 +34,12 @@
 </div>
 
 <!-- Watchlist Content -->
-<div class="watchlist-container">
+<div class="container">
     <h1>Your Watchlist</h1>
-    <div class="watchlist-list-container">
+    <div class="watchlist-container">
         <% if (watchlist.length > 0) { %>
             <% watchlist.forEach(entry => { %>
-                <div class="watchlist-entry">
+                <div class="watchlist-item">
                     <a href="/anime/<%= entry.name %>">
                         <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image">
                     </a>

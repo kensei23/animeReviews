@@ -106,6 +106,15 @@ body {
   box-sizing: border-box;
 }
 
+#password {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
 .form-container button {
   background-color: #4CAF50;
   color: white;
@@ -137,6 +146,27 @@ body {
 .popular-anime h2 {
   font-size: 1.2em;
   margin-bottom: 10px;
+}
+
+.add-to-watchlist-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 30px;
+  text-align: center;
+  transition: background-color 0.3s;
+}
+
+.add-to-watchlist-btn:hover {
+  background-color: #218838;
 }
 
 .anime-entry {
@@ -186,9 +216,11 @@ body {
 }
 
 /* Watchlist-specific styles */
-.watchlist-container {
-  width: 60%;
-  margin: 0 auto;
+.wishlist-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
 }
 
 .watchlist-list-container {
@@ -197,9 +229,33 @@ body {
   justify-content: space-around;
 }
 
-.watchlist-entry {
+.wishlist-item {
+  background-color: #fff;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  overflow: hidden;
+  width: 200px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.wishlist-item:hover {
+  transform: scale(1.05);
+}
+
+/* Style the images within wishlist items */
+.wishlist-image {
+  width: 100%;
+  height: auto;
+  border-bottom: 1px solid #ccc;
+}
+
+/* Style the name of the wishlist item */
+.wishlist-name {
   text-align: center;
-  margin: 20px;
+  font-size: 18px;
+  margin: 10px 0;
+  padding: 0 10px;
 }
 
 

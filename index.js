@@ -712,5 +712,4 @@ app.listen(PORT, () => {
 // IDEAS FOR THE WEBSITE:
 // Profile pictures and have them carry over onto the logo.           PARTIAL.
 // Fix anime names, change them from the codes to the actual names.
-// Fix PFP bug in the /anime/ route, is being passed through but still wont load.
 // Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

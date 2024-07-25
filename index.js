@@ -207,6 +207,7 @@ import fetchPopularAnime from './apiHelper.js'
 import multer from 'multer';
 import sharp from 'sharp';
 import fs from 'fs';
+import { searchAnime } from './allAnime.js';
 
 
 const { Pool } = pg;
@@ -490,6 +491,20 @@ app.post('/watchlist/add/:id', checkAuth, async (req, res) => {
   }
 });
 
+app.post('/watchlist/remove/:id', checkAuth, async (req, res) => {
+  const animeId = req.params.id;
+  const userId = req.session.userId;
+
+  try {
+    const deleteQuery = 'DELETE FROM watchlist WHERE user_id = $1 AND anime_id = $2';
+    await pool.query(deleteQuery, [userId, animeId]);
+    res.redirect('/watchlist');
+  } catch (err) {
+    console.error('Error removing from watchlist', err.stack);
+    res.send('Error');
+  }
+});
+
 // Get Watchlist
 app.get('/watchlist', checkAuth, async (req, res) => {
   let userProfilePicture = null;
@@ -544,19 +559,36 @@ app.get('/add', checkAuth, (req, res) => {
   res.render('add');
 });
 
+app.get('/search-anime', async (req, res) => {
+  try {
+    const query = req.query.q;
+    if (!query) {
+      return res.json([]);
+    }
+    const results = await searchAnime(query);
+    res.json(results);
+  } catch (error) {
+    console.error('Error searching anime', error);
+    res.status(500).send('Error searching anime');
+  }
+});
+
 // Add entry form submission route
 app.post('/add', checkAuth, (req, res) => {
   const { name, progress, rating, summary, image_url, spoiler } = req.body;
   const isSpoiler = spoiler === 'on'; // Convert checkbox value to boolean
+  const userId = req.session.userId;
+
   const query = 'INSERT INTO anime_entries (name, progress, rating, summary, image_url, spoiler, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7)';
-  const values = [name, progress, rating, summary, image_url, isSpoiler, req.session.userId];
+  const values = [name, progress, rating, summary, image_url, isSpoiler, userId];
+
   pool.query(query, values, (err) => {
-      if (err) {
-          console.error('Error executing query', err.stack);
-          res.send('Error');
-      } else {
-          res.redirect('/');
-      }
+    if (err) {
+      console.error('Error executing query', err.stack);
+      res.send('Error');
+    } else {
+      res.redirect('/');
+    }
   });
 });
 
@@ -710,6 +742,4 @@ app.listen(PORT, () => {
 });
 
 // IDEAS FOR THE WEBSITE:
-// Profile pictures and have them carry over onto the logo.           PARTIAL.
-// Fix anime names, change them from the codes to the actual names.
 // Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

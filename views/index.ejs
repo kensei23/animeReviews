@@ -41,6 +41,9 @@
                 <img src="<%= anime.coverImage.large %>" alt="<%= anime.title.romaji %>">
                 <h3><%= anime.title.romaji %></h3>
                 <p>Score: <%= anime.averageScore %></p>
+                <form action="/watchlist/add/<%= anime.id %>" method="POST">
+                    <button type="submit">Add to Wishlist</button>
+                  </form>
             </div>
         <% }) %>
     <% } else { %>

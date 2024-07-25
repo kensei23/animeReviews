@@ -43,6 +43,9 @@
                     <a href="/anime/<%= entry.name %>">
                         <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image">
                     </a>
+                    <form action="/watchlist/remove/<%= entry.id %>" method="POST">
+                        <button type="submit">Remove</button>
+                    </form>
                     <h2><%= entry.name %></h2>
                 </div>
             <% }) %>

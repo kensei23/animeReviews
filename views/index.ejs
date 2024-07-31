@@ -24,6 +24,7 @@
     <div class="navbar-links">
         <a href="/" class="nav-link">Home</a>
         <a href="/add" class="nav-link">Add Entry</a>
+        <a href="/recommendation" class="nav-link">Recommend</a>
         <a href="/watchlist" class="nav-link">Watchlist</a>
         <% if (userId) { %>
             <a href="/logout" class="nav-link">Logout</a>
@@ -42,8 +43,10 @@
                 <h3><%= anime.title.romaji %></h3>
                 <p>Score: <%= anime.averageScore %></p>
                 <form action="/watchlist/add/<%= anime.id %>" method="POST">
-                    <button type="submit">Add to Wishlist</button>
-                  </form>
+                    <input type="hidden" name="animeName" value="<%= anime.title.romaji %>">
+                    <input type="hidden" name="imageUrl" value="<%= anime.coverImage.large %>">
+                    <button type="submit">Add to Watchlist</button>
+                </form>
             </div>
         <% }) %>
     <% } else { %>
@@ -111,6 +114,30 @@
             }
         }
     }
+
+    document.getElementById('recommend-btn').addEventListener('click', async () => {
+        try {
+            const response = await fetch('/recommend');
+            const result = await response.json();
+            const resultDiv = document.getElementById('recommendation-result');
+
+            if (result.message) {
+                resultDiv.innerHTML = `<p>${result.message}</p>`;
+            } else {
+                resultDiv.innerHTML = `
+                    <h2>${result.name}</h2>
+                    <img src="${result.image_url}" alt="${result.name}" />
+                    <p>${result.summary}</p>
+                    <p>Genres: ${result.genres}</p>
+                    <p>Rating: ${result.rating}</p>
+                    <p>Progress: ${result.progress}</p>
+                    ${result.spoiler ? '<p><strong>Contains Spoilers</strong></p>' : ''}
+                `;
+            }
+        } catch (error) {
+            console.error('Error fetching recommendation', error);
+        }
+    });
 </script>
 </body>
 </html>

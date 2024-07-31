@@ -208,6 +208,7 @@ import multer from 'multer';
 import sharp from 'sharp';
 import fs from 'fs';
 import { searchAnime } from './allAnime.js';
+import { fetchGenresFromAniList } from './getAnimeGenres.js';
 
 
 const { Pool } = pg;
@@ -491,6 +492,7 @@ app.post('/watchlist/add/:id', checkAuth, async (req, res) => {
   }
 });
 
+// Remove from Watchlist
 app.post('/watchlist/remove/:id', checkAuth, async (req, res) => {
   const animeId = req.params.id;
   const userId = req.session.userId;
@@ -554,6 +556,51 @@ app.get('/anime/:name', async (req, res) => {
     }
 });
 
+app.get('/recommendation', checkAuth, async (req, res) => {
+  let userProfilePicture = null;
+    if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+      
+      if (userResult.rows.length > 0) {
+        userProfilePicture = userResult.rows[0].profile_picture;
+      }
+    }
+  try {
+      const userId = req.session.userId;
+
+      // Fetch a random anime the user has rated 8 or above
+      const userEntryResult = await pool.query(
+          `SELECT name, genres FROM anime_entries WHERE user_id = $1 AND rating >= 8 ORDER BY RANDOM() LIMIT 1`,
+          [userId]
+      );
+
+      if (userEntryResult.rows.length === 0) {
+          return res.render('recommendation', { recommendation: null });
+      }
+
+      const userEntry = userEntryResult.rows[0];
+      const userPreferredGenres = userEntry.genres;
+
+      // Fetch a recommendation based on the user's preferred genres
+      const recommendationResult = await pool.query(
+          `SELECT * FROM anime_entries WHERE genres && $1 AND rating >= 8 AND user_id != $2 ORDER BY RANDOM() LIMIT 1`,
+          [userPreferredGenres, userId]
+      );
+
+      if (recommendationResult.rows.length === 0) {
+          return res.render('recommendation', { recommendation: null });
+      }
+
+      const recommendation = recommendationResult.rows[0];
+      res.render('recommendation', { recommendation, userProfilePicture, userId: req.session.userId });
+  } catch (error) {
+      console.error('Error fetching recommendation', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 // Add entry form route
 app.get('/add', checkAuth, (req, res) => {
   res.render('add');
@@ -574,22 +621,25 @@ app.get('/search-anime', async (req, res) => {
 });
 
 // Add entry form submission route
-app.post('/add', checkAuth, (req, res) => {
+app.post('/add', checkAuth, async (req, res) => {
   const { name, progress, rating, summary, image_url, spoiler } = req.body;
   const isSpoiler = spoiler === 'on'; // Convert checkbox value to boolean
-  const userId = req.session.userId;
+  try {
+    const genres = await fetchGenresFromAniList(name);
 
-  const query = 'INSERT INTO anime_entries (name, progress, rating, summary, image_url, spoiler, user_id) VALUES ($1, $2, $3, $4, $5, $6, $7)';
-  const values = [name, progress, rating, summary, image_url, isSpoiler, userId];
+    const query = `
+      INSERT INTO anime_entries (name, progress, rating, summary, image_url, spoiler, user_id, genres)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `;
+    const values = [name, progress, rating, summary, image_url, isSpoiler, req.session.userId, genres];
 
-  pool.query(query, values, (err) => {
-    if (err) {
-      console.error('Error executing query', err.stack);
-      res.send('Error');
-    } else {
-      res.redirect('/');
-    }
-  });
+    await pool.query(query, values);
+
+    res.redirect('/');
+  } catch (err) {
+    console.error('Error executing query', err.stack);
+    res.send('Error');
+  }
 });
 
 // Edit entry page
@@ -742,4 +792,5 @@ app.listen(PORT, () => {
 });
 
 // IDEAS FOR THE WEBSITE:
+// Add the watchlist button to the recommendations page.
 // Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

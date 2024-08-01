@@ -558,48 +558,53 @@ app.get('/anime/:name', async (req, res) => {
 
 app.get('/recommendation', checkAuth, async (req, res) => {
   let userProfilePicture = null;
-    if (req.session.userId) {
-      const query = 'SELECT profile_picture FROM users WHERE id = $1';
-      const values = [req.session.userId];
-      const userResult = await pool.query(query, values);
-      
-      if (userResult.rows.length > 0) {
-        userProfilePicture = userResult.rows[0].profile_picture;
-      }
+  if (req.session.userId) {
+    const query = 'SELECT profile_picture FROM users WHERE id = $1';
+    const values = [req.session.userId];
+    const userResult = await pool.query(query, values);
+    
+    if (userResult.rows.length > 0) {
+      userProfilePicture = userResult.rows[0].profile_picture;
     }
+  }
+
   try {
-      const userId = req.session.userId;
+    // Fetch user's high-rated entries
+    const userEntriesQuery = `
+      SELECT * FROM anime_entries
+      WHERE user_id = $1 AND rating >= 8
+      ORDER BY RANDOM() LIMIT 1
+    `;
+    const userEntriesResult = await pool.query(userEntriesQuery, [req.session.userId]);
 
-      // Fetch a random anime the user has rated 8 or above
-      const userEntryResult = await pool.query(
-          `SELECT name, genres FROM anime_entries WHERE user_id = $1 AND rating >= 8 ORDER BY RANDOM() LIMIT 1`,
-          [userId]
-      );
+    if (userEntriesResult.rows.length === 0) {
+      return res.render('recommendation', { recommendation: null, message: 'No suitable recommendation found', userProfilePicture });
+    }
 
-      if (userEntryResult.rows.length === 0) {
-          return res.render('recommendation', { recommendation: null });
-      }
+    const userEntry = userEntriesResult.rows[0];
+    const genres = userEntry.genres;
 
-      const userEntry = userEntryResult.rows[0];
-      const userPreferredGenres = userEntry.genres;
+    // Fetch a recommendation based on genres
+    const recommendationQuery = `
+      SELECT * FROM anime_entries
+      WHERE genres && $1 AND user_id != $2 AND rating >= 8
+      ORDER BY RANDOM() LIMIT 1
+    `;
+    const recommendationResult = await pool.query(recommendationQuery, [genres, req.session.userId]);
 
-      // Fetch a recommendation based on the user's preferred genres
-      const recommendationResult = await pool.query(
-          `SELECT * FROM anime_entries WHERE genres && $1 AND rating >= 8 AND user_id != $2 ORDER BY RANDOM() LIMIT 1`,
-          [userPreferredGenres, userId]
-      );
+    if (recommendationResult.rows.length === 0) {
+      return res.render('recommendation', { recommendation: null, message: 'No suitable recommendation found', userProfilePicture });
+    }
 
-      if (recommendationResult.rows.length === 0) {
-          return res.render('recommendation', { recommendation: null });
-      }
+    const recommendation = recommendationResult.rows[0];
+    res.render('recommendation', { recommendation, message: null, userProfilePicture, userId: req.session.userId });
 
-      const recommendation = recommendationResult.rows[0];
-      res.render('recommendation', { recommendation, userProfilePicture, userId: req.session.userId });
-  } catch (error) {
-      console.error('Error fetching recommendation', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+  } catch (err) {
+    console.error('Error fetching recommendation', err);
+    res.send('Error');
   }
 });
+
 
 // Add entry form route
 app.get('/add', checkAuth, (req, res) => {
@@ -792,5 +797,6 @@ app.listen(PORT, () => {
 });
 
 // IDEAS FOR THE WEBSITE:
-// Add the watchlist button to the recommendations page.
+// Add the watchlist button to the popular anime and find a way to make the id from 6 digits to the required 2
+// Add the Author of the anime entry to the entries, maybe be able to see what other anime they have reviewed.
 // Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

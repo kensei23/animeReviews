@@ -40,6 +40,9 @@
             <p>Genres: <%= recommendation.genres.join(', ') %></p>
             <p>Rating: <%= recommendation.rating %></p>
             <p>Summary: <%= recommendation.summary %></p>
+            <form action="/watchlist/add/<%= recommendation.id %>" method="POST">
+                <button type="submit">Add to Watchlist</button>
+            </form>
         </div>
     <% } else { %>
         <p>No recommendation available at the moment.</p>

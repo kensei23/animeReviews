@@ -88,6 +88,16 @@
                   </form>
                   <p>Likes: <%= entry.likes %> | Dislikes: <%= entry.dislikes %></p>
                 </div>
+                <div class="author-info">
+                    <a href="/user/<%= entry.user_id %>">
+                        <% if (entry.profile_picture) { %>
+                            <img src="<%= entry.profile_picture %>" alt="<%= entry.author %>" class="profile-pic">
+                        <% } else { %>
+                            <img src="/logo.png" alt="<%= entry.author %>" class="profile-pic">
+                        <% } %>
+                        <span><%= entry.author %></span>
+                    </a>
+                </div>
               </div>
             </div>
           <% }) %>

@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= animeName %> - Entries</title>
+    <title><%= user.username %>'s Profile</title>
     <link rel="stylesheet" href="/styles.css">
 </head>
-<body>  
-    <!-- Navigation Bar -->
+<body>
     <div class="navbar">
         <div class="navbar-logo">
             <a href="/profile">
@@ -32,25 +31,29 @@
         </div>
     </div>
 
-    <!-- Anime Entries Content -->
     <div class="container">
-        <h1>Entries for <%= animeName %></h1>
+        <div class="profile-header">
+            <img src="<%= user.profile_picture ? user.profile_picture.startsWith('/') ? user.profile_picture : '/' + user.profile_picture : '/logo.png' %>" alt="<%= user.username %>" class="profile-pic">
+            <h1 class="header"><%= user.username %></h1>
+            <p>Favourite Anime: <%= user.favourite_anime ? user.favourite_anime : 'Not specified' %></p>
+        </div>
         <div class="list-container">
-            <% if (entries.length > 0) { %>
+            <h2><%= user.username %>'s Entries</h2>
+            <% if (entries && entries.length > 0) { %>
                 <% entries.forEach(entry => { %>
                     <div class="entry">
-                        <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="showDetails('<%= entry.id %>')">
-                        <div id="details-<%= entry.id %>" style="display: none;">
-                            <h2><%= entry.name %></h2>
+                        <img src="<%= entry.image_url %>" alt="<%= entry.name %>" class="entry-image" onclick="toggleDetails('<%= entry.id %>')">
+                        <% if (entry.spoiler) { %>
+                            <p class="spoiler-warning" id="spoiler-<%= entry.id %>">THIS POST CONTAINS SPOILERS</p>
+                        <% } %>
+                        <div id="details-<%= entry.id %>" class="entry-details">
+                            <h3><%= entry.name %></h3>
                             <p>Progress: <%= entry.progress %></p>
                             <p>Rating: <%= entry.rating %></p>
                             <p>Summary: <%= entry.summary %></p>
-                            <% if (entry.user_id === userId) { %>
-                                <a href="/edit/<%= entry.id %>">Edit</a>
-                                <form action="/delete/<%= entry.id %>" method="POST" style="display:inline;">
-                                    <button type="submit">Delete</button>
-                                </form>
-                            <% } %>
+                            <form action="/watchlist/add/<%= entry.id %>" method="POST" style="display:inline;">
+                                <button type="submit">Add to Watchlist</button>
+                            </form>
                             <div class="like-dislike">
                                 <form action="/like/<%= entry.id %>" method="POST" style="display: inline;">
                                   <button type="submit">Like</button>
@@ -60,30 +63,30 @@
                                 </form>
                                 <p>Likes: <%= entry.likes %> | Dislikes: <%= entry.dislikes %></p>
                               </div>
-                              <div class="entry-author">
-                                <a href="/user/<%= entry.user_id %>">
-                                    <img src="<%= entry.user_profile_picture %>" alt="<%= entry.user_username %>" class="profile-pic-small">
-                                    <span><%= entry.user_username %></span>
-                                </a>
-                            </div>
                         </div>
                     </div>
                 <% }) %>
             <% } else { %>
-                <p>No entries found for this anime.</p>
+                <p>No entries found for this user.</p>
             <% } %>
         </div>
     </div>
-
     <script>
-        function showDetails(entryId) {
+        function toggleDetails(entryId) {
             var detailsDiv = document.getElementById('details-' + entryId);
-            if (detailsDiv.style.display === 'none') {
+            var spoilerWarning = document.getElementById('spoiler-' + entryId);
+            if (detailsDiv.style.display === 'none' || !detailsDiv.style.display) {
                 detailsDiv.style.display = 'block';
+                if (spoilerWarning) {
+                    spoilerWarning.style.display = 'none';
+                }
             } else {
                 detailsDiv.style.display = 'none';
+                if (spoilerWarning) {
+                    spoilerWarning.style.display = 'block';
+                }
             }
-        };
+        }
     </script>
 </body>
 </html>

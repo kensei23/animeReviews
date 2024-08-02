@@ -40,13 +40,13 @@
     <div class="profile-info">
         <h2>User Information</h2>
         <p>Username: <%= user.username %></p>
-        <form action="/profile" method="POST">
+        <form action="/profile/update" method="POST">
             <label for="email">Email:</label>
-            <input type="email" id="email" name="email" value="<%= user.email %>" required>
+            <input type="email" id="email" name="email" value="<%= user.email %>">
             <label for="fullname">Full Name:</label>
             <input type="text" id="fullname" name="fullname" value="<%= user.fullname %>">
             <label for="favorite_anime">Favorite Anime:</label>
-            <input type="text" id="favorite_anime" name="favorite_anime" value="<%= user.favorite_anime %>">
+            <input type="text" id="favorite_anime" name="favourite_anime" value="<%= user.favourite_anime %>">
             <button type="submit">Update</button>
         </form>
         <div>

@@ -263,30 +263,34 @@ const upload = multer({ storage });
 
 /// Home page route
 app.get('/', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM anime_entries ORDER BY id DESC LIMIT 20');
-    const popularAnime = await fetchPopularAnime();
-    
-    let userProfilePicture = null;
-    if (req.session.userId) {
+  let userProfilePicture = null;
+  if (req.session.userId) {
       const query = 'SELECT profile_picture FROM users WHERE id = $1';
       const values = [req.session.userId];
       const userResult = await pool.query(query, values);
-      
-      if (userResult.rows.length > 0) {
-        userProfilePicture = userResult.rows[0].profile_picture;
-      }
-    }
 
-    res.render('index', {
-      entries: result.rows,
-      userId: req.session.userId,
-      popularAnime,
-      userProfilePicture
-    });
+      if (userResult.rows.length > 0) {
+          userProfilePicture = userResult.rows[0].profile_picture;
+      }
+  }
+
+  try {
+      const entriesQuery = `
+          SELECT anime_entries.*, users.username AS author, users.profile_picture FROM anime_entries
+          JOIN users ON anime_entries.user_id = users.id
+      `;
+      const entriesResult = await pool.query(entriesQuery);
+      const popularAnime = await fetchPopularAnime();
+
+      res.render('index', {
+          userId: req.session.userId,
+          entries: entriesResult.rows,
+          popularAnime: popularAnime,
+          userProfilePicture: userProfilePicture
+      });
   } catch (err) {
-    console.error('Error executing query', err.stack);
-    res.send('Error');
+      console.error('Error fetching entries:', err.stack);
+      res.send('Error');
   }
 });
 
@@ -404,11 +408,48 @@ app.get('/profile', checkAuth, async (req, res) => {
   }
 });
 
+app.get('/user/:id', async (req, res) => {
+  const userId = req.params.id;
+  let userProfilePicture = null;
+  if (req.session.userId) {
+      const query = 'SELECT profile_picture FROM users WHERE id = $1';
+      const values = [req.session.userId];
+      const userResult = await pool.query(query, values);
+
+      if (userResult.rows.length > 0) {
+          userProfilePicture = userResult.rows[0].profile_picture;
+      }
+  }
+
+
+  try {
+      const userQuery = 'SELECT username, profile_picture, favourite_anime FROM users WHERE id = $1';
+      const userResult = await pool.query(userQuery, [userId]);
+
+      if (userResult.rows.length === 0) {
+          return res.status(404).send('User not found');
+      }
+
+      const entriesQuery = 'SELECT * FROM anime_entries WHERE user_id = $1';
+      const entriesResult = await pool.query(entriesQuery, [userId]);
+
+      res.render('user_profile', {
+          user: userResult.rows[0],
+          entries: entriesResult.rows,
+          userProfilePicture,
+          userId: req.session.userId
+      });
+  } catch (err) {
+      console.error('Error fetching user profile:', err.stack);
+      res.send('Error');
+  }
+});
+
 // Update account details route
 app.post('/profile/update', checkAuth, async (req, res) => {
-  const { name, email, favourite_anime } = req.body;
+  const { fullname, email, favourite_anime } = req.body;
   try {
-    await pool.query('UPDATE users SET name = $1, email = $2, favourite_anime = $3 WHERE id = $4', [name, email, favourite_anime, req.session.userId]);
+    await pool.query('UPDATE users SET name = $1, email = $2, favourite_anime = $3 WHERE id = $4', [fullname, email, favourite_anime, req.session.userId]);
     res.redirect('/profile');
   } catch (error) {
     console.error('Error updating profile', error.stack);
@@ -798,5 +839,5 @@ app.listen(PORT, () => {
 
 // IDEAS FOR THE WEBSITE:
 // Add the watchlist button to the popular anime and find a way to make the id from 6 digits to the required 2
-// Add the Author of the anime entry to the entries, maybe be able to see what other anime they have reviewed.
+// Add the Author of the anime entry to the entries, maybe be able to see what other anime they have reviewed.            PARTIAL!!!-fix issue on watchlist page entries where author wont render correctly
 // Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

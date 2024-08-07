@@ -60,9 +60,13 @@
                                 </form>
                                 <p>Likes: <%= entry.likes %> | Dislikes: <%= entry.dislikes %></p>
                               </div>
-                              <div class="entry-author">
+                            <div class="author-info">
                                 <a href="/user/<%= entry.user_id %>">
-                                    <img src="<%= entry.user_profile_picture %>" alt="<%= entry.user_username %>" class="profile-pic-small">
+                                    <% if (entry.profile_picture) { %>
+                                        <img src="<%= entry.user_profile_picture.startsWith('/') ? entry.user_profile_picture : '/' + entry.user_profile_picture %>" alt="<%= entry.user_username %>" class="profile-pic">
+                                    <% } else { %>
+                                        <img src="/logo.png" alt="<%= entry.author %>" class="profile-pic">
+                                    <% } %>
                                     <span><%= entry.user_username %></span>
                                 </a>
                             </div>

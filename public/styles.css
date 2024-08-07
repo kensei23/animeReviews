@@ -169,6 +169,15 @@ body {
   background-color: #218838;
 }
 
+.profile-stats {
+  display: flex;
+  gap: 15px;
+}
+
+.profile-stats p {
+  margin: 0;
+}
+
 .anime-entry {
   text-align: center; /* Center align text and images */
 }

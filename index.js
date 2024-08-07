@@ -387,20 +387,37 @@ app.get('/api/popular-anime', async (req, res) => {
 
 // Profile page route
 app.get('/profile', checkAuth, async (req, res) => {
+  const userId = req.session.userId;
+
   try {
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [req.session.userId]);
-    const entriesResult = await pool.query('SELECT * FROM anime_entries WHERE user_id = $1', [req.session.userId]);
-    
+    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [userId]);
+    const user = userResult.rows[0];
+
+    // Fetch user entries
+    const entriesResult = await pool.query('SELECT * FROM anime_entries WHERE user_id = $1', [userId]);
+
     let userProfilePicture = null;
-    if (userResult.rows.length > 0) {
-      userProfilePicture = userResult.rows[0].profile_picture;
+    if (user) {
+      userProfilePicture = user.profile_picture;
     }
 
+    // Fetch follower count
+    const followersQuery = 'SELECT COUNT(*) FROM follows WHERE followed_id = $1';
+    const followersResult = await pool.query(followersQuery, [userId]);
+    const followersCount = parseInt(followersResult.rows[0].count, 10);
+
+    // Fetch following count
+    const followingQuery = 'SELECT COUNT(*) FROM follows WHERE follower_id = $1';
+    const followingResult = await pool.query(followingQuery, [userId]);
+    const followingCount = parseInt(followingResult.rows[0].count, 10);
+
     res.render('profile', { 
-      user: userResult.rows[0], 
+      user, 
       userEntries: entriesResult.rows, 
-      userId: req.session.userId, 
-      userProfilePicture 
+      userId,
+      userProfilePicture,
+      followersCount,
+      followingCount
     });
   } catch (error) {
     console.error('Error fetching profile data', error.stack);
@@ -408,9 +425,15 @@ app.get('/profile', checkAuth, async (req, res) => {
   }
 });
 
-app.get('/user/:id', async (req, res) => {
-  const userId = req.params.id;
+// Other User profile route
+app.get('/user/:userId', async (req, res) => {
+  const profileUserId = req.params.userId;
+  const currentUserId = req.session.userId;
   let userProfilePicture = null;
+  let isFollowing = false;
+  let followersCount = 0;
+  let followingCount = 0;
+
   if (req.session.userId) {
       const query = 'SELECT profile_picture FROM users WHERE id = $1';
       const values = [req.session.userId];
@@ -419,28 +442,82 @@ app.get('/user/:id', async (req, res) => {
       if (userResult.rows.length > 0) {
           userProfilePicture = userResult.rows[0].profile_picture;
       }
+
+      // Check if current user is following profile user
+      const followQuery = 'SELECT * FROM follows WHERE follower_id = $1 AND followed_id = $2';
+      const followResult = await pool.query(followQuery, [currentUserId, profileUserId]);
+      isFollowing = followResult.rows.length > 0;
   }
 
-
   try {
-      const userQuery = 'SELECT username, profile_picture, favourite_anime FROM users WHERE id = $1';
-      const userResult = await pool.query(userQuery, [userId]);
+      const userQuery = 'SELECT * FROM users WHERE id = $1';
+      const userResult = await pool.query(userQuery, [profileUserId]);
+      const user = userResult.rows[0];
 
-      if (userResult.rows.length === 0) {
-          return res.status(404).send('User not found');
-      }
+      // Get follower count
+      const followersQuery = 'SELECT COUNT(*) FROM follows WHERE followed_id = $1';
+      const followersResult = await pool.query(followersQuery, [profileUserId]);
+      followersCount = parseInt(followersResult.rows[0].count, 10);
+
+      // Get following count
+      const followingQuery = 'SELECT COUNT(*) FROM follows WHERE follower_id = $1';
+      const followingResult = await pool.query(followingQuery, [profileUserId]);
+      followingCount = parseInt(followingResult.rows[0].count, 10);
 
       const entriesQuery = 'SELECT * FROM anime_entries WHERE user_id = $1';
-      const entriesResult = await pool.query(entriesQuery, [userId]);
+      const entriesResult = await pool.query(entriesQuery, [profileUserId]);
 
-      res.render('user_profile', {
-          user: userResult.rows[0],
-          entries: entriesResult.rows,
+      res.render('user_profile', { 
+          user, 
+          entries: entriesResult.rows, 
+          isFollowing, 
+          currentUserId, 
           userProfilePicture,
-          userId: req.session.userId
+          userId: req.session.userId,
+          followersCount,
+          followingCount
       });
   } catch (err) {
-      console.error('Error fetching user profile:', err.stack);
+      console.error('Error fetching user profile', err.stack);
+      res.send('Error');
+  }
+});
+
+// Follow user post route
+app.post('/follow/:userId', checkAuth, async (req, res) => {
+  const followerId = req.session.userId;
+  const followedId = req.params.userId;
+
+  try {
+      // Check if already following
+      const checkQuery = 'SELECT * FROM follows WHERE follower_id = $1 AND followed_id = $2';
+      const checkResult = await pool.query(checkQuery, [followerId, followedId]);
+
+      if (checkResult.rows.length === 0) {
+          // Add follow entry
+          const query = 'INSERT INTO follows (follower_id, followed_id) VALUES ($1, $2)';
+          await pool.query(query, [followerId, followedId]);
+      }
+
+      res.redirect(`/user/${followedId}`);
+  } catch (err) {
+      console.error('Error following user', err.stack);
+      res.send('Error');
+  }
+});
+
+//Unfollow user post route
+app.post('/unfollow/:userId', checkAuth, async (req, res) => {
+  const followerId = req.session.userId;
+  const followedId = req.params.userId;
+
+  try {
+      const query = 'DELETE FROM follows WHERE follower_id = $1 AND followed_id = $2';
+      await pool.query(query, [followerId, followedId]);
+
+      res.redirect(`/user/${followedId}`);
+  } catch (err) {
+      console.error('Error unfollowing user', err.stack);
       res.send('Error');
   }
 });
@@ -576,27 +653,40 @@ app.get('/watchlist', checkAuth, async (req, res) => {
 
 // Get Entries for anime in watchlist
 app.get('/anime/:name', async (req, res) => {
-    const animeName = req.params.name;
-    let userProfilePicture = null;
-    if (req.session.userId) {
+  const animeName = req.params.name;
+  let userProfilePicture = null;
+
+  if (req.session.userId) {
       const query = 'SELECT profile_picture FROM users WHERE id = $1';
       const values = [req.session.userId];
       const userResult = await pool.query(query, values);
-      
+
       if (userResult.rows.length > 0) {
-        userProfilePicture = userResult.rows[0].profile_picture;
+          userProfilePicture = userResult.rows[0].profile_picture;
       }
-    }
-    try {
-        const query = 'SELECT * FROM anime_entries WHERE name = $1';
-        const result = await pool.query(query, [animeName]);
-        res.render('animeEntries', { entries: result.rows, animeName: animeName, userId: req.session.userId, userProfilePicture });
-    } catch (err) {
-        console.error('Error fetching anime entries', err.stack);
-        res.send('Error');
-    }
+  }
+
+  try {
+      const query = `
+          SELECT anime_entries.*, users.username AS user_username, users.profile_picture AS user_profile_picture 
+          FROM anime_entries 
+          JOIN users ON anime_entries.user_id = users.id 
+          WHERE anime_entries.name = $1
+      `;
+      const result = await pool.query(query, [animeName]);
+      res.render('animeEntries', { 
+          entries: result.rows, 
+          animeName: animeName, 
+          userId: req.session.userId, 
+          userProfilePicture 
+      });
+  } catch (err) {
+      console.error('Error fetching anime entries', err.stack);
+      res.send('Error');
+  }
 });
 
+//Get recommendation page route
 app.get('/recommendation', checkAuth, async (req, res) => {
   let userProfilePicture = null;
   if (req.session.userId) {
@@ -645,7 +735,6 @@ app.get('/recommendation', checkAuth, async (req, res) => {
     res.send('Error');
   }
 });
-
 
 // Add entry form route
 app.get('/add', checkAuth, (req, res) => {
@@ -839,5 +928,5 @@ app.listen(PORT, () => {
 
 // IDEAS FOR THE WEBSITE:
 // Add the watchlist button to the popular anime and find a way to make the id from 6 digits to the required 2
-// Add the Author of the anime entry to the entries, maybe be able to see what other anime they have reviewed.            PARTIAL!!!-fix issue on watchlist page entries where author wont render correctly
+// Add the ability to follow a user, and have a following tab on the site
 // Include WHERE the anime can be watched/streamed and maybe be able to click on it to direct u to the site. 

@@ -35,7 +35,14 @@
         <div class="profile-header">
             <img src="<%= user.profile_picture ? user.profile_picture.startsWith('/') ? user.profile_picture : '/' + user.profile_picture : '/logo.png' %>" alt="<%= user.username %>" class="profile-pic">
             <h1 class="header"><%= user.username %></h1>
+            <div class="profile-stats">
+                <p>Following: <%= followingCount %></p>
+                <p>Followers: <%= followersCount %></p>
+            </div>
             <p>Favourite Anime: <%= user.favourite_anime ? user.favourite_anime : 'Not specified' %></p>
+            <form id="follow-form" action="<%= isFollowing ? '/unfollow/' + user.id : '/follow/' + user.id %>" method="POST">
+                <button type="submit"><%= isFollowing ? 'Unfollow' : 'Follow' %></button>
+            </form>            
         </div>
         <div class="list-container">
             <h2><%= user.username %>'s Entries</h2>

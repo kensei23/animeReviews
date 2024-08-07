@@ -40,6 +40,10 @@
     <div class="profile-info">
         <h2>User Information</h2>
         <p>Username: <%= user.username %></p>
+        <div class="profile-stats">
+            <p>Following: <%= followingCount %></p>
+            <p>Followers: <%= followersCount %></p>
+        </div>
         <form action="/profile/update" method="POST">
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" value="<%= user.email %>">
